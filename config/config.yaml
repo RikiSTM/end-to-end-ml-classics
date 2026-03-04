@@ -1,0 +1,8 @@
+
+
+
+# config/config.yaml
+data:
+  raw_dir: "data/raw"                  
+  filename: "WA_Fn-UseC_-Telco-Customer-Churn.csv"   
+  db_path: "data/churn.db"               
