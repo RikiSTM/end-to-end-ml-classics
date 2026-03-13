@@ -1,2 +1,22 @@
-*.db
+# database
 data/database/
+
+# mac
+.DS_Store
+
+# python cache
+__pycache__/
+*.pyc
+
+# notebook checkpoints
+.ipynb_checkpoints/
+
+# logs
+logs/
+
+# mlflow artifacts
+mlruns/
+
+# virtual env
+.venv/
+env/

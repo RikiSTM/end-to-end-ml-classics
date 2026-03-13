@@ -5,7 +5,7 @@ import sqlite3
 # Config 
 DATA_DIR = Path("data")
 RAW_PATH = DATA_DIR / "raw" / "WA_Fn-UseC_-Telco-Customer-Churn.csv"
-DB_PATH = DATA_DIR / "churn.db"
+DB_PATH = DATA_DIR /"database"/ "churn.db"
 
 # Load & simpan ke SQLite
 df = pd.read_csv(RAW_PATH)
