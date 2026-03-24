@@ -1,6 +1,9 @@
 # database
 data/database/
 
+# processed
+data/processed
+
 # mac
 .DS_Store
 
