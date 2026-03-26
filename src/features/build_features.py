@@ -61,6 +61,7 @@ def build_features(df):
 
 def encode_features(df):
 
+    # Encode categorical to bool
     categorical_cols = [
         "Contract",
         "PaymentMethod",
@@ -72,6 +73,10 @@ def encode_features(df):
     ]
 
     df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
+
+    # Change bool dtypes to int 
+    bool_cols = df.select_dtypes(include="bool").columns
+    df[bool_cols] = df[bool_cols].astype(int)
 
     return df
 
