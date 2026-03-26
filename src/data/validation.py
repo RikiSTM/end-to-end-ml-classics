@@ -22,12 +22,14 @@ def validate_raw(df):
     if (df["tenure"] < 0).any():
         raise ValueError("Invalid tenure < 0")
 
-    if (df["MonthlyCharges"] <= 0).any():
-        raise ValueError("Invalid MonthlyCharges <= 0")
-
-    # 4. categorical constraint
+    # 4. Checking churn variation constraint
     allowed_churn = {"Yes", "No"}
     if not set(df["Churn"].unique()).issubset(allowed_churn):
         raise ValueError("Invalid Churn values")
+    
+    #5. Allowed contract constraint
+    allowed_contract = {"Month-to-month", "One year", "Two year"}
+    if not set(df["Contract"].unique()).issubset(allowed_contract):
+        raise ValueError("Invalid Contract values")
 
     print("Raw data validation passed")
