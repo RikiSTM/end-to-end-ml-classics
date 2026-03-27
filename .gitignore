@@ -5,8 +5,7 @@ data/database/
 data/processed
 
 # model
-models/
-*.pkl
+models/*.pkl
 
 # mac
 .DS_Store
