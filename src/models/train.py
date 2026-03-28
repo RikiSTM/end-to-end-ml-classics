@@ -1,11 +1,11 @@
 import pandas as pd
 import joblib
-from sklearn.metrics import confusion_matrix
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, roc_auc_score
 from sklearn.preprocessing import StandardScaler
+from src.evaluation.evaluate import evaluate
+
 
 DATA_DIR = Path("data")
 FEATURE_PATH = DATA_DIR / "processed" / "features.csv"
@@ -44,21 +44,6 @@ def train_model(X_train, y_train):
 
     return model,scaler
 
-
-def evaluate(model,scaler, X_test, y_test):
-
-    X_test_scaled = scaler.transform(X_test)    
-    y_pred = model.predict(X_test_scaled)
-    y_proba = model.predict_proba(X_test_scaled)[:, 1]
-
-    acc = accuracy_score(y_test, y_pred)
-    auc = roc_auc_score(y_test, y_proba)
-    cm = confusion_matrix(y_test, y_pred)
-
-    print(f"Accuracy: {acc:.4f}")
-    print(f"ROC-AUC: {auc:.4f}")
-    print(f"Confusion Matrix: ")
-    print(cm)
 
 def save_artifacts(model, scaler):
 
