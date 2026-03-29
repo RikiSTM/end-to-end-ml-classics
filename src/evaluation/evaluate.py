@@ -1,75 +1,76 @@
-from sklearn.metrics import accuracy_score, roc_auc_score, confusion_matrix
-from sklearn.metrics import precision_score, recall_score
+from sklearn.metrics import (
+    accuracy_score,
+    roc_auc_score,
+    precision_score,
+    recall_score,
+    f1_score
+)
 import numpy as np
-import pandas as pd
 
 
-def evaluate(model,scaler, X_test, y_test):
-
-    X_test_scaled = scaler.transform(X_test)    
-    y_pred = model.predict(X_test_scaled)
-    y_proba = model.predict_proba(X_test_scaled)[:, 1]
-
-    acc = accuracy_score(y_test, y_pred)
-    auc = roc_auc_score(y_test, y_proba)
-    cm = confusion_matrix(y_test, y_pred)
-
-    print(f"Accuracy: {acc:.4f}")
-    print(f"ROC-AUC: {auc:.4f}")
-    print(f"Confusion Matrix: ")
-    print(cm)
-
-    # Sanity check test
-    sanity_check(y_test)
-
-      # Shuffle test
-    shuffle_test(model, scaler, X_test, y_test)
-
-    # Treshold tuning check
-    threshold_tuning(model, scaler, X_test, y_test)
-
-
-def sanity_check(y_test):
-
-    # baseline: semua prediksi = kelas mayoritas
-    majority_class = y_test.mode()[0]
-    y_dummy = [majority_class] * len(y_test)
-
-    acc = accuracy_score(y_test, y_dummy)
-
-    print("=== Sanity Check ===")
-    print(f"Dummy Accuracy (majority class): {acc:.4f}")
-
-def shuffle_test(model, scaler, X_test, y_test):
+def evaluate(models, scaler, X_test, y_test):
+    """
+    Evaluate multiple models and select best one
+    """
 
     X_test_scaled = scaler.transform(X_test)
 
-    # shuffle label
-    y_shuffled = np.random.permutation(y_test)
+    results = {}
 
-    y_proba = model.predict_proba(X_test_scaled)[:, 1]
+    for name, model in models.items():
 
-    auc = roc_auc_score(y_shuffled, y_proba)
+        y_proba = model.predict_proba(X_test_scaled)[:, 1]
 
-    print("=== Shuffle Test ===")
-    print(f"ROC-AUC (shuffled labels): {auc:.4f}")
+        best_t, best_f1 = find_best_threshold(y_test, y_proba)
+        y_pred = (y_proba >= best_t).astype(int)
 
-
-
-def threshold_tuning(model, scaler, X_test, y_test):
-
-    X_test_scaled = scaler.transform(X_test)
-    y_proba = model.predict_proba(X_test_scaled)[:, 1]
-
-    print("=== Threshold Tuning ===")
-
-    for t in [0.3, 0.4, 0.5, 0.6, 0.7]:
-
-        y_pred = (y_proba >= t).astype(int)
-
+        auc = roc_auc_score(y_test, y_proba)
         precision = precision_score(y_test, y_pred)
         recall = recall_score(y_test, y_pred)
 
-        print(f"Threshold: {t}")
-        print(f"Precision: {precision:.3f} | Recall: {recall:.3f}")
-        print("---")
+        results[name] = {
+            "model": model,
+            "auc": auc,
+            "f1": best_f1,
+            "precision": precision,
+            "recall": recall,
+            "threshold": best_t
+        }
+
+        print(f"\n=== {name.upper()} ===")
+        print(f"AUC       : {auc:.4f}")
+        print(f"F1        : {best_f1:.4f}")
+        print(f"Precision : {precision:.4f}")
+        print(f"Recall    : {recall:.4f}")
+        print(f"Threshold : {best_t:.2f}")
+
+    # ===== Select best model =====
+    best_model_name = max(results, key=lambda x: results[x]["f1"])
+    best_result = results[best_model_name]
+
+    print("\n=== BEST MODEL ===")
+    print(f"Selected: {best_model_name}")
+
+    return {
+        "model_ok": best_result["auc"] > 0.75,
+        "best_model_name": best_model_name,
+        "model": best_result["model"],
+        "threshold": best_result["threshold"],
+        "auc": best_result["auc"],
+        "f1": best_result["f1"]
+    }
+
+
+def find_best_threshold(y_true, y_proba):
+    best_t = 0.5
+    best_f1 = 0
+
+    for t in np.linspace(0.1, 0.9, 17):
+        y_pred = (y_proba >= t).astype(int)
+        f1 = f1_score(y_true, y_pred)
+
+        if f1 > best_f1:
+            best_f1 = f1
+            best_t = t
+
+    return best_t, best_f1
