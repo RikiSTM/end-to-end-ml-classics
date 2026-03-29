@@ -25,11 +25,8 @@ SCALER_PATH = MODEL_DIR / "scaler.pkl"
 
 
 # =========================
-# DATA
+# Split Data
 # =========================
-def load_data():
-    return pd.read_csv(FEATURE_PATH)
-
 
 def split_data(df):
     X = df.drop("Churn", axis=1)
