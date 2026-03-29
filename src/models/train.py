@@ -10,6 +10,8 @@ from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 
 from src.evaluation.evaluate import evaluate
+from src.data.ingest import load_raw_data
+from src.features.build_features import build_feature_pipeline
 
 
 # =========================
@@ -96,19 +98,27 @@ def save_artifacts(models, scaler):
 # MAIN
 # =========================
 def main():
-    df = load_data()
+
+   # ===== ingestion =====
+    df_raw = load_raw_data()
+
+    # ===== feature =====
+    df = build_feature_pipeline()
 
     print(df.shape)
     print(df["Churn"].value_counts(normalize=True))
 
+    # ===== split =====
     X_train, X_test, y_train, y_test = split_data(df)
 
+    # ===== train =====
     models = build_models()
     trained_models, scaler = train_models(models, X_train, y_train)
 
-    # evaluate semua model (harus support dict di evaluate.py)
+    # ===== evaluate =====
     results = evaluate(trained_models, scaler, X_test, y_test)
 
+    # ===== save =====
     save_artifacts(trained_models, scaler)
 
     print("\nFinal Decision:")
