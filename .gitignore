@@ -4,9 +4,6 @@ data/database/
 # processed
 data/processed
 
-# model
-models/*.pkl
-
 # mac
 .DS_Store
 
@@ -26,3 +23,16 @@ mlruns/
 # virtual env
 .venv/
 env/
+
+# MLflow
+mlruns/
+mlartifacts/
+mlflow.db
+
+# Models / artifacts
+*.pkl
+
+# Python env
+.venv/
+__pycache__/
+*.pyc

@@ -13,6 +13,11 @@ from src.evaluation.evaluate import evaluate
 from src.data.ingest import load_raw_data
 from src.features.build_features import build_feature_pipeline
 
+import mlflow
+mlflow.set_tracking_uri("http://127.0.0.1:5000")
+import mlflow.sklearn
+from sklearn.metrics import roc_auc_score
+
 
 # =========================
 # PATH CONFIG
@@ -63,16 +68,33 @@ def build_models():
     }
 
 
-def train_models(models, X_train, y_train):
+def train_models(models, X_train, y_train, X_test, y_test):
+
     trained_models = {}
 
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
 
     for name, model in models.items():
-        model.fit(X_train_scaled, y_train)
-        trained_models[name] = model
-        print(f"Trained: {name}")
+
+        with mlflow.start_run(run_name=name):
+
+            # train
+            model.fit(X_train_scaled, y_train)
+
+            # evaluate simple metric (for logging)
+            y_proba = model.predict_proba(X_test_scaled)[:, 1]
+            auc = roc_auc_score(y_test, y_proba)
+
+            # logging
+            mlflow.log_param("model_type", name)
+            mlflow.log_metric("auc", auc)
+            mlflow.sklearn.log_model(model, name)
+
+            trained_models[name] = model
+
+            print(f"Trained & Logged: {name}")
 
     return trained_models, scaler
 
@@ -110,7 +132,13 @@ def main():
 
     # ===== train =====
     models = build_models()
-    trained_models, scaler = train_models(models, X_train, y_train)
+    trained_models, scaler = train_models(
+    models,
+    X_train,
+    y_train,
+    X_test,
+    y_test
+)
 
     # ===== evaluate =====
     results = evaluate(trained_models, scaler, X_test, y_test)
