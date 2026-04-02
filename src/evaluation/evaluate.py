@@ -44,21 +44,7 @@ def evaluate(models, scaler, X_test, y_test):
         print(f"Recall    : {recall:.4f}")
         print(f"Threshold : {best_t:.2f}")
 
-    # ===== Select best model =====
-    best_model_name = max(results, key=lambda x: results[x]["f1"])
-    best_result = results[best_model_name]
-
-    print("\n=== BEST MODEL ===")
-    print(f"Selected: {best_model_name}")
-
-    return {
-        "model_ok": best_result["auc"] > 0.75,
-        "best_model_name": best_model_name,
-        "model": best_result["model"],
-        "threshold": best_result["threshold"],
-        "auc": best_result["auc"],
-        "f1": best_result["f1"]
-    }
+    return results
 
 
 def find_best_threshold(y_true, y_proba):

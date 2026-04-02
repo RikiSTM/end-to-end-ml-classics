@@ -68,33 +68,20 @@ def build_models():
     }
 
 
-def train_models(models, X_train, y_train, X_test, y_test):
+def train_models(models, X_train, y_train):
 
     trained_models = {}
 
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
 
     for name, model in models.items():
 
-        with mlflow.start_run(run_name=name):
+        model.fit(X_train_scaled, y_train)
 
-            # train
-            model.fit(X_train_scaled, y_train)
+        trained_models[name] = model
 
-            # evaluate simple metric (for logging)
-            y_proba = model.predict_proba(X_test_scaled)[:, 1]
-            auc = roc_auc_score(y_test, y_proba)
-
-            # logging
-            mlflow.log_param("model_type", name)
-            mlflow.log_metric("auc", auc)
-            mlflow.sklearn.log_model(model, name)
-
-            trained_models[name] = model
-
-            print(f"Trained & Logged: {name}")
+        print(f"Trained: {name}")
 
     return trained_models, scaler
 
@@ -135,13 +122,30 @@ def main():
     trained_models, scaler = train_models(
     models,
     X_train,
-    y_train,
-    X_test,
-    y_test
+    y_train
 )
 
     # ===== evaluate =====
     results = evaluate(trained_models, scaler, X_test, y_test)
+    best_model_name = max(results, key=lambda x: results[x]["f1"])
+    best_result = results[best_model_name]
+
+    # ===== ML Flow Log =====
+    for name, metrics in results.items():
+
+        model = trained_models[name]
+
+    with mlflow.start_run(run_name=name):
+
+        mlflow.log_param("model_type", name)
+        mlflow.log_param("threshold", metrics["threshold"])
+
+        mlflow.log_metric("auc", metrics["auc"])
+        mlflow.log_metric("f1", metrics["f1"])
+        mlflow.log_metric("precision", metrics["precision"])
+        mlflow.log_metric("recall", metrics["recall"])
+
+        mlflow.sklearn.log_model(model, name)
 
     # ===== save =====
     save_artifacts(trained_models, scaler)
