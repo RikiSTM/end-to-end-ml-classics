@@ -1,7 +1,5 @@
-import pandas as pd
-import joblib
+import joblib, time
 from pathlib import Path
-
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
@@ -14,9 +12,12 @@ from src.data.ingest import load_raw_data
 from src.features.build_features import build_feature_pipeline
 
 import mlflow
+from mlflow.models import infer_signature
 mlflow.set_tracking_uri("http://127.0.0.1:5000")
 import mlflow.sklearn
-from sklearn.metrics import roc_auc_score
+from mlflow.tracking import MlflowClient
+from sklearn.pipeline import Pipeline
+
 
 
 # =========================
@@ -106,7 +107,7 @@ def save_artifacts(models, scaler):
 def main():
 
    # ===== ingestion =====
-    df_raw = load_raw_data()
+    load_raw_data()
 
     # ===== feature =====
     df = build_feature_pipeline()
@@ -131,21 +132,90 @@ def main():
     best_result = results[best_model_name]
 
     # ===== ML Flow Log =====
+
+    run_ids = {}
+
     for name, metrics in results.items():
 
         model = trained_models[name]
 
-    with mlflow.start_run(run_name=name):
+        # gabungkan scaler + model
+        pipeline = Pipeline([
+            ("scaler", scaler),
+            ("model", model)
+        ])
 
-        mlflow.log_param("model_type", name)
-        mlflow.log_param("threshold", metrics["threshold"])
+        # input contoh (RAW)
+        input_example = X_train.iloc[:5]
 
-        mlflow.log_metric("auc", metrics["auc"])
-        mlflow.log_metric("f1", metrics["f1"])
-        mlflow.log_metric("precision", metrics["precision"])
-        mlflow.log_metric("recall", metrics["recall"])
+        # signature harus pakai pipeline, bukan model
+        signature = infer_signature(
+            X_train,
+            pipeline.predict(X_train)
+        )
 
-        mlflow.sklearn.log_model(model, name)
+        with mlflow.start_run(run_name=name) as run:
+
+
+            mlflow.set_tag("model_family", "churn")
+            mlflow.set_tag("model_name", name)
+            mlflow.set_tag("stage_candidate", "true")
+
+            mlflow.set_tag("features", ",".join(X_train.columns))
+            mlflow.set_tag("target", "Churn")
+
+            mlflow.set_tag("notes", "baseline churn model with scaling + threshold tuning")
+            mlflow.log_param("model_type", name)
+            mlflow.log_param("threshold", metrics["threshold"])
+
+            mlflow.log_metric("auc", metrics["auc"])
+            mlflow.log_metric("f1", metrics["f1"])
+            mlflow.log_metric("precision", metrics["precision"])
+            mlflow.log_metric("recall", metrics["recall"])
+
+            mlflow.sklearn.log_model(
+                pipeline,   # penting: pipeline, bukan model
+                artifact_path="model",
+                signature=signature,
+                input_example=input_example
+            )
+
+            run_ids[name] = run.info.run_id
+                
+
+
+    # ======== MLflow Registry =======
+
+    client = MlflowClient()
+    model_name = "churn_model"
+    best_run_id = run_ids[best_model_name]
+    model_uri = f"runs:/{best_run_id}/model"
+
+    result = mlflow.register_model(
+    model_uri=model_uri,
+    name=model_name
+    )
+    
+    # ===== WAIT UNTIL READY =====
+    for _ in range(10):
+        model_version = client.get_model_version(
+            name=model_name,
+            version=result.version
+        )
+        if model_version.status == "READY":
+            break
+        time.sleep(1)
+    else:
+        raise Exception("Model not ready after waiting")
+    
+
+    # ===== TRANSITION =====
+    client.set_registered_model_alias(
+        name=model_name,
+        alias="champion",
+        version=result.version
+    )
+
 
     # ===== save =====
     save_artifacts(trained_models, scaler)
