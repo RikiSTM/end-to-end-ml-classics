@@ -1,39 +1,40 @@
 import joblib, time
 from pathlib import Path
-from sklearn.model_selection import train_test_split
+
+import numpy as np
+
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import roc_auc_score, f1_score
+from sklearn.base import clone
+from sklearn.pipeline import Pipeline
 
 from xgboost import XGBClassifier
 
-from src.evaluation.evaluate import evaluate
+from src.evaluation.evaluate import evaluate, find_best_threshold_business
 from src.data.ingest import load_raw_data
 from src.features.build_features import build_feature_pipeline
 
 import mlflow
 from mlflow.models import infer_signature
-mlflow.set_tracking_uri("http://127.0.0.1:5000")
-import mlflow.sklearn
 from mlflow.tracking import MlflowClient
-from sklearn.pipeline import Pipeline
+import mlflow.sklearn
 
+mlflow.set_tracking_uri("http://127.0.0.1:5000")
 
 
 # =========================
-# PATH CONFIG
+# CONFIG
 # =========================
-DATA_DIR = Path("data")
-FEATURE_PATH = DATA_DIR / "processed" / "features.csv"
-
 MODEL_DIR = Path("models")
 SCALER_PATH = MODEL_DIR / "scaler.pkl"
 
 
 # =========================
-# Split Data
+# SPLIT
 # =========================
-
 def split_data(df):
     X = df.drop("Churn", axis=1)
     y = df["Churn"]
@@ -47,7 +48,7 @@ def split_data(df):
 
 
 # =========================
-# MODEL
+# MODELS
 # =========================
 def build_models():
     return {
@@ -69,22 +70,79 @@ def build_models():
     }
 
 
-def train_models(models, X_train, y_train):
-
+# =========================
+# TRAIN FULL DATA
+# =========================
+def train_models(models, X, y):
     trained_models = {}
 
     scaler = StandardScaler()
-    X_train_scaled = scaler.fit_transform(X_train)
+    X_scaled = scaler.fit_transform(X)
 
     for name, model in models.items():
-
-        model.fit(X_train_scaled, y_train)
-
+        model.fit(X_scaled, y)
         trained_models[name] = model
 
-        print(f"Trained: {name}")
-
     return trained_models, scaler
+
+
+# =========================
+# CROSS VALIDATION
+# =========================
+def cross_validate_models(models, X, y, n_splits=5):
+
+    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+
+    cv_results = {name: [] for name in models.keys()}
+
+    for fold, (train_idx, val_idx) in enumerate(skf.split(X, y)):
+
+        X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
+        y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
+
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_val_scaled = scaler.transform(X_val)
+
+        for name, model in models.items():
+
+            m = clone(model)
+            m.fit(X_train_scaled, y_train)
+
+            y_proba = m.predict_proba(X_val_scaled)[:, 1]
+
+            best_t, best_business = find_best_threshold_business(y_val, y_proba)
+            y_pred = (y_proba >= best_t).astype(int)
+
+            auc = roc_auc_score(y_val, y_proba)
+            f1 = f1_score(y_val, y_pred)
+
+            cv_results[name].append({
+                "auc": auc,
+                "f1": f1,
+                "business_score": best_business,
+                "threshold": best_t
+            })
+
+    # aggregate
+    final_results = {}
+
+    for name, folds in cv_results.items():
+
+        final_results[name] = {
+            "auc": np.mean([f["auc"] for f in folds]),
+            "auc_std": np.std([f["auc"] for f in folds]),
+
+            "f1": np.mean([f["f1"] for f in folds]),
+            "f1_std": np.std([f["f1"] for f in folds]),
+
+            "business_score": np.mean([f["business_score"] for f in folds]),
+            "business_std": np.std([f["business_score"] for f in folds]),
+
+            "threshold": np.mean([f["threshold"] for f in folds])
+        }
+
+    return final_results
 
 
 # =========================
@@ -93,10 +151,8 @@ def train_models(models, X_train, y_train):
 def save_artifacts(models, scaler):
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
-    # simpan semua model dulu (selection nanti di evaluate/register)
     for name, model in models.items():
-        path = MODEL_DIR / f"{name}.pkl"
-        joblib.dump(model, path)
+        joblib.dump(model, MODEL_DIR / f"{name}.pkl")
 
     joblib.dump(scaler, SCALER_PATH)
 
@@ -106,123 +162,112 @@ def save_artifacts(models, scaler):
 # =========================
 def main():
 
-   # ===== ingestion =====
+    # ===== data =====
     load_raw_data()
-
-    # ===== feature =====
     df = build_feature_pipeline()
 
-    print(df.shape)
-    print(df["Churn"].value_counts(normalize=True))
+    X = df.drop("Churn", axis=1)
+    y = df["Churn"]
 
-    # ===== split =====
+    # ===== holdout =====
     X_train, X_test, y_train, y_test = split_data(df)
 
-    # ===== train =====
+    # ===== CV =====
     models = build_models()
-    trained_models, scaler = train_models(
-    models,
-    X_train,
-    y_train
-)
+    cv_results = cross_validate_models(models, X, y)
 
-    # ===== evaluate =====
+    best_model_name = max(
+        cv_results,
+        key=lambda x: cv_results[x]["business_score"]
+    )
+
+    # ===== train full =====
+    models = build_models()
+    trained_models, scaler = train_models(models, X, y)
+
+    # ===== evaluate holdout =====
     results = evaluate(trained_models, scaler, X_test, y_test)
-    best_model_name = max(results, key=lambda x: results[x]["business_score"])
-    best_result = results[best_model_name]
 
-    # ===== ML Flow Log =====
-
+    # ===== MLflow =====
     run_ids = {}
 
     for name, metrics in results.items():
 
         model = trained_models[name]
+        cv_metrics = cv_results[name]
 
-        # gabungkan scaler + model
         pipeline = Pipeline([
             ("scaler", scaler),
             ("model", model)
         ])
 
-        # input contoh (RAW)
-        input_example = X_train.iloc[:5]
-
-        # signature harus pakai pipeline, bukan model
         signature = infer_signature(
             X_train,
             pipeline.predict(X_train)
         )
 
-        with mlflow.start_run(run_name=name) as run:
-
+        with mlflow.start_run(run_name=name):
 
             mlflow.set_tag("model_family", "churn")
-            mlflow.set_tag("model_name", name)
-            mlflow.set_tag("stage_candidate", "true")
-
             mlflow.set_tag("features", ",".join(X_train.columns))
-            mlflow.set_tag("target", "Churn")
-
             mlflow.set_tag("notes", "baseline churn model with scaling + threshold tuning")
-            mlflow.log_param("model_type", name)
-            mlflow.log_param("threshold", metrics["threshold"])
 
+            # holdout
             mlflow.log_metric("auc", metrics["auc"])
             mlflow.log_metric("f1", metrics["f1"])
             mlflow.log_metric("precision", metrics["precision"])
             mlflow.log_metric("recall", metrics["recall"])
             mlflow.log_metric("business_score", metrics["business_score"])
 
+            # CV
+            mlflow.log_metric("cv_auc", cv_metrics["auc"])
+            mlflow.log_metric("cv_auc_std", cv_metrics["auc_std"])
+
+            mlflow.log_metric("cv_f1", cv_metrics["f1"])
+            mlflow.log_metric("cv_f1_std", cv_metrics["f1_std"])
+
+            mlflow.log_metric("cv_business", cv_metrics["business_score"])
+            mlflow.log_metric("cv_business_std", cv_metrics["business_std"])
+
             mlflow.sklearn.log_model(
-                pipeline,   # penting: pipeline, bukan model
+                pipeline,
                 artifact_path="model",
                 signature=signature,
-                input_example=input_example
+                input_example=X_train.iloc[:5]
             )
 
-            run_ids[name] = run.info.run_id
-                
+            run_ids[name] = mlflow.active_run().info.run_id
 
-
-    # ======== MLflow Registry =======
-
+    # ===== registry =====
     client = MlflowClient()
     model_name = "churn_model"
+
     best_run_id = run_ids[best_model_name]
     model_uri = f"runs:/{best_run_id}/model"
 
     result = mlflow.register_model(
-    model_uri=model_uri,
-    name=model_name
+        model_uri=model_uri,
+        name=model_name
     )
-    
-    # ===== WAIT UNTIL READY =====
+
+    # wait ready
     for _ in range(10):
-        model_version = client.get_model_version(
-            name=model_name,
-            version=result.version
-        )
-        if model_version.status == "READY":
+        mv = client.get_model_version(name=model_name, version=result.version)
+        if mv.status == "READY":
             break
         time.sleep(1)
-    else:
-        raise Exception("Model not ready after waiting")
-    
 
-    # ===== TRANSITION =====
     client.set_registered_model_alias(
         name=model_name,
         alias="champion",
         version=result.version
     )
 
-
-    # ===== save =====
+    # save local
     save_artifacts(trained_models, scaler)
 
-    print("\nFinal Decision:")
-    print(results)
+    print("\nFINAL CV RESULTS:")
+    print(cv_results)
 
 
 if __name__ == "__main__":
