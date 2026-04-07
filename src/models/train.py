@@ -128,7 +128,7 @@ def main():
 
     # ===== evaluate =====
     results = evaluate(trained_models, scaler, X_test, y_test)
-    best_model_name = max(results, key=lambda x: results[x]["f1"])
+    best_model_name = max(results, key=lambda x: results[x]["business_score"])
     best_result = results[best_model_name]
 
     # ===== ML Flow Log =====
@@ -172,6 +172,7 @@ def main():
             mlflow.log_metric("f1", metrics["f1"])
             mlflow.log_metric("precision", metrics["precision"])
             mlflow.log_metric("recall", metrics["recall"])
+            mlflow.log_metric("business_score", metrics["business_score"])
 
             mlflow.sklearn.log_model(
                 pipeline,   # penting: pipeline, bukan model
