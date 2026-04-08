@@ -1,6 +1,7 @@
 import sqlite3
 import pandas as pd
 from pathlib import Path
+from sklearn.base import BaseEstimator, TransformerMixin
 
 DATA_DIR = Path("data")
 DB_PATH = DATA_DIR / "database" / "churn.db"
@@ -28,6 +29,7 @@ def load_data():
 
     df = pd.read_sql(query, conn)
     conn.close()
+    df = df.drop(columns=["customerID"], errors="ignore")
     return df
 
 
@@ -56,16 +58,7 @@ def build_features(df):
 
 def encode_features(df):
 
-    categorical_cols = [
-        "Contract",
-        "PaymentMethod",
-        "InternetService",
-        "OnlineSecurity",
-        "OnlineBackup",
-        "DeviceProtection",
-        "TechSupport"
-    ]
-
+    categorical_cols = df.select_dtypes(include=["object"]).columns
     df = pd.get_dummies(df, columns=categorical_cols, drop_first=True)
 
     bool_cols = df.select_dtypes(include="bool").columns
@@ -103,6 +96,77 @@ def build_feature_pipeline():
 def save_data(df):
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(OUTPUT_PATH, index=False)
+
+class FeatureBuilder(BaseEstimator, TransformerMixin):
+
+    def fit(self, X, y=None):
+        df = X.copy()
+
+        # cleaning + feature engineering (copy sama)
+        df = df.drop(columns=["customerID"], errors="ignore")
+
+        df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce")
+        df["TotalCharges"] = df["TotalCharges"].fillna(0)
+
+        df["CustomerValue"] = df["tenure"] * df["MonthlyCharges"]
+
+        df["AutoPay"] = df["PaymentMethod"].isin([
+            "Bank transfer (automatic)",
+            "Credit card (automatic)"
+        ]).astype(int)
+
+        services = [
+            "OnlineSecurity",
+            "OnlineBackup",
+            "DeviceProtection",
+            "TechSupport"
+        ]
+
+        df["ServiceCount"] = (df[services] == "Yes").sum(axis=1)
+
+        df = df.drop(columns=["Churn"], errors="ignore")
+
+        # encoding
+        df = pd.get_dummies(df, drop_first=True)
+
+        # 👉 simpan kolom
+        self.columns_ = df.columns
+
+        return self
+
+    def transform(self, X):
+        df = X.copy()
+
+        # sama persis seperti fit
+        df = df.drop(columns=["customerID"], errors="ignore")
+
+        df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce")
+        df["TotalCharges"] = df["TotalCharges"].fillna(0)
+
+        df["CustomerValue"] = df["tenure"] * df["MonthlyCharges"]
+
+        df["AutoPay"] = df["PaymentMethod"].isin([
+            "Bank transfer (automatic)",
+            "Credit card (automatic)"
+        ]).astype(int)
+
+        services = [
+            "OnlineSecurity",
+            "OnlineBackup",
+            "DeviceProtection",
+            "TechSupport"
+        ]
+
+        df["ServiceCount"] = (df[services] == "Yes").sum(axis=1)
+
+        df = df.drop(columns=["Churn"], errors="ignore")
+
+        df = pd.get_dummies(df, drop_first=True)
+
+        # 👉 align kolom
+        df = df.reindex(columns=self.columns_, fill_value=0)
+
+        return df
 
 
 # optional manual run

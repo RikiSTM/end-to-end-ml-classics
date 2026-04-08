@@ -1,5 +1,4 @@
 from sklearn.metrics import (
-    accuracy_score,
     roc_auc_score,
     precision_score,
     recall_score,
@@ -8,18 +7,17 @@ from sklearn.metrics import (
 import numpy as np
 
 
-def evaluate(models, scaler, X_test, y_test):
+def evaluate(models, X_test, y_test):
     """
     Evaluate multiple models and select best one
     """
-
-    X_test_scaled = scaler.transform(X_test)
 
     results = {}
 
     for name, model in models.items():
 
-        y_proba = model.predict_proba(X_test_scaled)[:, 1]
+    
+        y_proba = model.predict_proba(X_test)[:, 1]
 
         best_t, best_business = find_best_threshold_business(y_test, y_proba)
         y_pred = (y_proba >= best_t).astype(int)
