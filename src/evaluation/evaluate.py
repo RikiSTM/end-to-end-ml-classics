@@ -68,4 +68,4 @@ def compute_business_score(y_true, y_pred):
     fp = ((y_true == 0) & (y_pred == 1)).sum()
     fn = ((y_true == 1) & (y_pred == 0)).sum()
 
-    return tp*100 - fp*10 - fn*200
+    return tp*100 - fp*75 - fn*200

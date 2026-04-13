@@ -105,6 +105,7 @@ class FeatureBuilder(BaseEstimator, TransformerMixin):
         # cleaning + feature engineering (copy sama)
         df = df.drop(columns=["customerID"], errors="ignore")
 
+        
         df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce")
         df["TotalCharges"] = df["TotalCharges"].fillna(0)
 
@@ -140,6 +141,7 @@ class FeatureBuilder(BaseEstimator, TransformerMixin):
         # sama persis seperti fit
         df = df.drop(columns=["customerID"], errors="ignore")
 
+        
         df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce")
         df["TotalCharges"] = df["TotalCharges"].fillna(0)
 

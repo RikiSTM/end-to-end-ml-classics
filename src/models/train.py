@@ -1,6 +1,6 @@
 import joblib, time
 from pathlib import Path
-
+import mlflow.pyfunc
 import numpy as np
 
 from sklearn.model_selection import train_test_split, StratifiedKFold
@@ -23,6 +23,15 @@ from mlflow.tracking import MlflowClient
 import mlflow.sklearn
 
 mlflow.set_tracking_uri("http://127.0.0.1:5000")
+
+
+class SklearnProbaWrapper(mlflow.pyfunc.PythonModel):
+
+    def load_context(self, context):
+        self.model = joblib.load(context.artifacts["model"])
+
+    def predict(self, context, model_input):
+        return self.model.predict_proba(model_input)[:, 1]
 
 # =========================
 # CONFIG
@@ -202,12 +211,15 @@ def main():
             mlflow.log_metric("cv_f1_std", cv_metrics["f1_std"])
             mlflow.log_metric("cv_business", cv_metrics["business_score"])
             mlflow.log_metric("cv_business_std", cv_metrics["business_std"])
-
-            mlflow.sklearn.log_model(
-                pipeline,
-                artifact_path="model",
-                signature=signature,
-                input_example=X_train.iloc[:5]
+            joblib.dump(pipeline, "models/temp_pipeline.pkl")
+            
+            mlflow.pyfunc.log_model(
+            artifact_path="model",
+            python_model=SklearnProbaWrapper(),
+            artifacts={
+                "model": "models/temp_pipeline.pkl"
+            },
+            input_example=X_train.iloc[:5]
             )
 
             run_ids[name] = mlflow.active_run().info.run_id
@@ -241,3 +253,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
