@@ -8,6 +8,7 @@ from app.logging import setup_logger
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from app.adapter import build_full_input
+from pathlib import Path
 
 
 logger = setup_logger()
@@ -32,6 +33,18 @@ def predict(data: ChurnRequest):
 
         df = pd.DataFrame([full_data])
 
+        # ===== log inference for Data drift =====
+        log_path = Path("logs/inference_log.csv")
+
+        df.to_csv(
+            log_path,
+            mode="a",
+            header=not log_path.exists(),
+            index=False
+        )
+                
+
+        # ===== model predict =====
         proba = model.predict(df)[0]
         pred = int(proba >= threshold)
 

@@ -24,6 +24,9 @@ mlruns/
 .venv/
 env/
 
+#reports
+*.html
+
 # MLflow
 mlruns/
 mlartifacts/
@@ -31,6 +34,7 @@ mlflow.db
 
 # Models / artifacts
 *.pkl
+*.csv
 
 # Python env
 .venv/

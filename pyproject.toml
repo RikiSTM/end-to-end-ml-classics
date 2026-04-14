@@ -17,6 +17,7 @@ seaborn = "^0.13.2"
 mlflow = "^3.10.1"
 fastapi = "^0.135.3"
 uvicorn = "^0.44.0"
+evidently = "^0.7.21"
 
 [build-system]
 requires = ["poetry-core"]

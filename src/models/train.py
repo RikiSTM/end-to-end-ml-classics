@@ -161,6 +161,9 @@ def main():
         stratify=y
     )
 
+    # ===== save reference data for drift =====
+    X_train.to_csv("models/reference_data.csv", index=False)
+
     # ===== CV =====
     models = build_models()
     cv_results = cross_validate_models(models, X, y)
