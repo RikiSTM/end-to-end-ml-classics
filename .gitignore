@@ -1,42 +1,26 @@
-# database
-data/database/
-
-# processed
-data/processed
-
-# mac
+# OS / IDE
 .DS_Store
 
-# python cache
+# Python Cache & Env
 __pycache__/
 *.pyc
-
-# notebook checkpoints
-.ipynb_checkpoints/
-
-# logs
-logs/
-
-# mlflow artifacts
-mlruns/
-
-# virtual env
 .venv/
 env/
+.ipynb_checkpoints/
 
-#reports
-*.html
+# Data & Database
+data/database/
+data/processed/
+
+# Models & Artifacts
+*.pkl
+*.csv
+
+# Logs & Reports
+logs/
+reports/*.html
 
 # MLflow
 mlruns/
 mlartifacts/
 mlflow.db
-
-# Models / artifacts
-*.pkl
-*.csv
-
-# Python env
-.venv/
-__pycache__/
-*.pyc
