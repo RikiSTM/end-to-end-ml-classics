@@ -6,7 +6,7 @@ authors = ["Riki S <rikisutiaman@gmail.com>"]
 package-mode = false                      
 
 [tool.poetry.dependencies]
-python = "^3.12"                         
+python = ">=3.12,<3.14"                         
 omegaconf = "^2.3.0"
 pandas = "^2.2"
 numpy = "^2.4.2"
@@ -18,6 +18,7 @@ mlflow = "^3.10.1"
 fastapi = "^0.135.3"
 uvicorn = "^0.44.0"
 evidently = "^0.7.21"
+great-expectations = "^1.17.2"
 
 [build-system]
 requires = ["poetry-core"]
