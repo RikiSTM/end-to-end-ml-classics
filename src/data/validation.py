@@ -1,5 +1,10 @@
+import great_expectations as gx
+
 def validate_raw(df):
 
+    # Wrap the standard Pandas DataFrame into a Great Expectations Dataset object
+    gdf = gx.from_pandas(df)
+    
     # 1. Schema Check
     required_cols = [
         "tenure",
@@ -11,25 +16,33 @@ def validate_raw(df):
     ]
 
     for col in required_cols:
-        if col not in df.columns:
-            raise ValueError(f"Missing column: {col}")
+        gdf.expect_column_to_exist(col)
 
-    # 2. null check (critical)
-    if df["TotalCharges"].isna().any():
-        raise ValueError("TotalCharges contains NaN")
+    # 2. Null Check: Ensure there are no missing values in critical numeric data
+    gdf.expect_column_values_to_not_be_null("TotalCharges")
 
-    # 3. range check
-    if (df["tenure"] < 0).any():
-        raise ValueError("Invalid tenure < 0")
+    # 3. Range Check: Ensure tenure values are non-negative
+    gdf.expect_column_values_to_be_between("tenure", min_value=0)
 
-    # 4. Checking churn variation constraint
-    allowed_churn = {"Yes", "No"}
-    if not set(df["Churn"].unique()).issubset(allowed_churn):
-        raise ValueError("Invalid Churn values")
+    # 4. Value Constraint Check: Verify Churn contains only permitted categorical values
+    gdf.expect_column_values_to_be_in_set("Churn", value_set=["Yes", "No"])
     
-    #5. Allowed contract constraint
-    allowed_contract = {"Month-to-month", "One year", "Two year"}
-    if not set(df["Contract"].unique()).issubset(allowed_contract):
-        raise ValueError("Invalid Contract values")
+    # 5. Value Constraint Check: Verify Contract aligns with allowed business logic rules
+    gdf.expect_column_values_to_be_in_set(
+        "Contract", 
+        value_set=["Month-to-month", "One year", "Two year"]
+    )
 
-    print("Raw data validation passed")
+    # Trigger and run all the declared expectations against the data
+    results = gdf.validate()
+
+    # Evaluate validation outcomes, acting as an assertion checkpoint
+    if not results["success"]:
+        # Parse the GX validation output JSON to isolate exactly what failed
+        failed_expectations = [
+            res["expectation_config"]["kwargs"] 
+            for res in results["results"] if not res["success"]
+        ]
+        raise ValueError(f"Data validation failed! Details: {failed_expectations}")
+
+    print("GX Raw data validation passed successfully")
