@@ -229,16 +229,11 @@ Multi-model training with unified evaluation
 ---
 
 ## 12. Limitations
-No hyperparameter tuning yet
-No experiment tracking (e.g. MLflow)
-No production deployment (API / batch inference)
-Monitoring and drift detection not implemented
+* Hyperparameter tuning is not yet automated.
+* DVC is not utilized as we are currently working with a single, static Kaggle dataset.
+* No extensive data cleaning pipeline was built since the dataset was already pre-cleaned.
 
 ---
 
 ##  13. Future Improvements
-Add experiment tracking using MLflow
-Add data versioning using DVC
-Deploy model using FastAPI
-Implement monitoring and drift detection (e.g. Evidently AI)
-Add automated pipeline orchestration (e.g. Apache Airflow)
+* Integrate ML XAI tools to debug model logic and interpretability.
