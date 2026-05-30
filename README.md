@@ -237,3 +237,7 @@ Multi-model training with unified evaluation
 
 ##  13. Future Improvements
 * Integrate ML XAI tools to debug model logic and interpretability.
+
+* ## 14. Author / Contact
+Developed by Riki Let's connect and discuss more about Data Validation, MLOps, and QA Automation:  
+🔗 https://www.linkedin.com/in/riki-s-7ab291b5/
