@@ -1,0 +1,30 @@
+# Git Core (Wajib di-ignore oleh Docker)
+.git
+.gitignore
+
+# OS / IDE
+.DS_Store
+
+# Python Cache & Env
+__pycache__/
+*.pyc
+.venv/
+env/
+.ipynb_checkpoints/
+
+# Data & Database (Hanya ignore hasil proses/db, raw data boleh masuk jika diperlukan)
+data/database/
+data/processed/
+
+# Models & Artifacts
+*.pkl
+*.csv
+
+# Logs & Reports
+logs/
+reports/
+
+# MLflow
+mlruns/
+mlartifacts/
+mlflow.db
