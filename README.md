@@ -1,245 +1,117 @@
-# Telco Customer Churn Prediction
+# 📉 Telco Customer Churn Prediction: An End-to-End MLOps Pipeline
+
+![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)
+![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)
+![MLflow](https://img.shields.io/badge/MLflow-0194E2?style=flat&logo=mlflow)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-%23F7931E.svg?style=flat&logo=scikit-learn&logoColor=white)
+
+An end-to-end Machine Learning pipeline to predict customer churn, featuring automated data ingestion, model tracking, and a containerized API for real-time inference.
+
+---
 
 ## 1. Business Problem
 
-Customer churn is a major challenge in the telecommunications industry. When customers cancel their subscriptions, the company loses recurring revenue.
-
-Acquiring new customers is often more expensive than retaining existing ones. Therefore, identifying customers who are likely to churn is critical for implementing effective retention strategies.
+Customer churn is a major challenge in the telecommunications industry. When customers cancel their subscriptions, the company loses recurring revenue. Acquiring new customers is often more expensive than retaining existing ones. 
 
 The objective of this project is to build a machine learning model that predicts whether a customer is likely to churn. With this information, the company can take proactive actions such as:
+- Targeted marketing campaigns for specific segments of customers.
+- Personalized offers or discount campaigns.
+- Improved service allocation.
 
-- Targeted marketing campaign for specific segement of the customer
-- Personalized offers or discounts campaigns
-- Improved service.
-
-Early identification of churn risk can help reduce revenue loss and improve customer lifetime value.
+**Impact:** Early identification of churn risk can help reduce revenue loss and improve customer lifetime value (CLV).
 
 ---
 
 ## 2. Problem Formulation
 
-The business problem is translated into a machine learning task as follows.
+- **Task Type:** Binary Classification
+- **Objective:** Predict whether a customer will churn.
+- **Target Variable:** `Churn` (1 = Customer leaves, 0 = Customer stays)
 
-**Task Type**
-
-Binary Classification
-
-**Objective**
-
-Predict whether a customer will churn.
-
-**Target Variable**
-Churn
-1 = customer leaves
-0 = customer stays
-
-
-The model learns patterns from historical customer data to estimate the probability of churn.
+The model learns patterns from historical customer data to estimate the probability of churn, serving as a decision-support system for the retention team.
 
 ---
 
 ## 3. Dataset Description
 
-Dataset used: **Telco Customer Churn Dataset**
+**Dataset:** Telco Customer Churn Dataset (7,043 customers)
 
-**Dataset Size**
-7043 customers
-
-
-**Feature Categories**
-
-### Demographic Information
-
-- Gender
-- SeniorCitizen
-- Partner
-- Dependents
-
-### Service Information
-
-- PhoneService
-- InternetService
-- OnlineSecurity
-- StreamingTV
-- StreamingMovies
-
-### Account Information
-
-- Contract
-- Tenure
-- MonthlyCharges
-- TotalCharges
-- PaymentMethod
-
-**Target Variable**
-Churn
-
+### Feature Categories:
+*   **Demographics:** Gender, SeniorCitizen, Partner, Dependents
+*   **Service Info:** PhoneService, InternetService, OnlineSecurity, StreamingTV, StreamingMovies
+*   **Account Info:** Contract, Tenure, MonthlyCharges, TotalCharges, PaymentMethod
 
 ---
 
-## 4. Exploratory Data Analysis (EDA)
+## 4. Modeling & Evaluation Strategy
 
-EDA is performed to understand the dataset structure and identify patterns related to churn.
+This project follows a multi-model experimentation strategy tracked via **MLflow**.
 
-Goals of EDA:
-
-- Understand feature distributions
-- Detect missing values
-- Identify outliers
-- Explore relationships between features and churn
+*   **Models Evaluated:** Logistic Regression (Baseline), Random Forest, XGBoost.
+*   **Metrics Used:** ROC-AUC (ranking performance), Precision, Recall, F1 Score.
+*   **Threshold Tuning:** Instead of using a fixed default threshold (0.5), this pipeline dynamically evaluates multiple probability thresholds and selects the one that maximizes the **F1 Score** to ensure a better balance between False Positives and False Negatives.
 
 ---
 
-### Dataset Overview
+## 5. MLOps & Architecture Design
 
-Initial inspection includes:
+Unlike standard notebook-based projects, this repository emphasizes **production reliability**:
 
-- Dataset shape 
-- Data types
-- Missing values
-- Summary statistics
-- related features
-
-## 5. Data Pipeline
-
-This project implements a modular data pipeline to ensure reproducibility and clear separation of concerns.
-
-Pipeline Flow
-
-Raw Data → Validation → Feature Engineering → Train/Test Split → Model Training → Evaluation
-
-### Ingestion :
-
-- Load raw dataset from CSV
-- Handle data type issues (e.g. TotalCharges)
-- Remove invalid or missing records
-- Validate schema and data quality
-
-### Feature Engineering :
-- Create new features:
-- CustomerValue = tenure × MonthlyCharges
-- AutoPay indicator
-- ServiceCount
-- Encode categorical variables (one-hot encoding)
-- Convert target variable:
-- Churn: Yes → 1, No → 0
-
-### Key Principle :
-- Pipeline uses function-based data flow (in-memory)
-- Avoids dependency on intermediate files (e.g. CSV as pipeline bridge)
+1.  **Experiment Tracking:** Integrated with `MLflow` to log parameters, metrics, and model artifacts seamlessly.
+2.  **Modular Pipeline:** In-memory, function-based data flow (Raw Data → Validation → Feature Engineering → Train/Test Split → Model Training → Evaluation) without relying on intermediate CSVs.
+3.  **Containerized Serving:** The best model is served via `FastAPI` and fully containerized using `Docker` and `docker-compose` for isolated, reproducible environments.
 
 ---
 
-## 6. Modeling Approach
+## 6. 🚀 How to Run (Docker Setup)
 
-This project follows a multi-model experimentation strategy.
+You can spin up the entire API and MLflow tracking server using Docker Compose.
 
-Models Used
-scikit-learn Logistic Regression (baseline)
-scikit-learn Random Forest
-XGBoost XGBoost
-Strategy
-Train multiple candidate models
-Use the same dataset and preprocessing for fair comparison
-Select the best model based on evaluation metrics
-Why Baseline Matters
+```bash
+# 1. Clone the repository
+git clone [https://github.com/RikiSTM/telco-churn-mlops-pipeline.git](https://github.com/RikiSTM/telco-churn-mlops-pipeline.git)
+cd telco-churn-mlops-pipeline
 
-Logistic Regression is used as a baseline to:
+# 2. Build and run the containers
+docker-compose up --build -d
 
-establish a minimum performance benchmark
-validate that the pipeline is working correctly
+# 3. Access the services
+# - FastAPI Docs (Swagger UI): http://localhost:8000/docs
+# - MLflow UI: http://localhost:5000
+```
 
 ---
 
-## 7. Evaluation Strategy
+## 7. Project Structure
 
-Model evaluation is not based on accuracy alone.
-
-Metrics Used
-ROC-AUC (ranking performance)
-Precision
-Recall
-F1 Score
-Threshold Tuning
-
-Instead of using a fixed threshold (0.5), this project:
-
-evaluates multiple thresholds
-selects the threshold that maximizes F1 Score
-Probability → Threshold → Final Prediction
-
-This ensures better balance between false positives and false negatives.
+```text
+├── app/                  # FastAPI serving logic (model_loader.py, main.py)
+├── src/                  # Core pipeline scripts
+│   ├── data/             # ingest.py, validation.py
+│   ├── features/         # build_features.py
+│   ├── models/           # train.py
+│   └── evaluation/       # evaluate.py
+├── data/                 # Raw and processed data storage
+├── notebooks/            # EDA and initial experiments
+├── docker-compose.yml    # Multi-container orchestration
+├── Dockerfile            # Container configuration
+└── requirements.txt      # Python dependencies
+```
 
 ---
 
-## 8. Model Selection
+## 8. Limitations & Future Improvements
+Limitations: 
+- Hyperparameter tuning is not yet fully automated.
+- DVC is not utilized as we are currently working with a single, static Kaggle dataset.
 
-All trained models are evaluated and compared.
-
-Multiple Models → Evaluate → Select Best Model
-
-The best model is selected based on:
-
-highest F1 score
-acceptable ROC-AUC
-
-Only the selected model should be used for production deployment.
+Future Improvements (WIP): 
+- Integrate ML XAI (Explainable AI) tools like SHAP/LIME to debug model logic and provide interpretability for business stakeholders.
 
 ---
 
-## 9. Artifacts
-
-The following artifacts are generated:
-
-Trained models (.pkl)
-Scaler object
-Evaluation results (metrics and threshold)
-
-Artifacts are saved using joblib for reuse in inference.
-
----
-
-## 10. Project Structure
-src/
-  ├── data/
-  │     ├── ingest.py
-  │     └── validation.py
-  ├── features/
-  │     └── build_features.py
-  ├── models/
-  │     └── train.py
-  ├── evaluation/
-  │     └── evaluate.py
-
-data/
-  ├── raw/
-  ├── database/
-  └── processed/
-
-models/
-
----
-
-## 11. Key Design Decisions
-Single entry point (train.py) to orchestrate pipeline
-Modular functions instead of script-based execution
-In-memory data flow (no file dependency between steps)
-Multi-model training with unified evaluation
-
----
-
-## 12. Limitations
-* Hyperparameter tuning is not yet automated.
-* DVC is not utilized as we are currently working with a single, static Kaggle dataset.
-* No extensive data cleaning pipeline was built since the dataset was already pre-cleaned.
-
----
-
-##  13. Future Improvements
-* Integrate ML XAI tools to debug model logic and interpretability.
-
----
-
-## 14. Author / Contact
-Developed by Riki Let's connect and discuss more about Data Validation, MLOps, and QA Automation:  
+## 9. Author
+Riki Sutiaman
+Let's connect and discuss more about ML Engineering, MLOps, and Reliable Automation:
 🔗 https://www.linkedin.com/in/riki-s-7ab291b5/
