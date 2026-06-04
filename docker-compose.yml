@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # SERVICE 1: MLFLOW SERVER (Always On)
+  # ==========================================
+  mlflow-server:
+    build: .
+    container_name: churn_mlflow
+    hostname: mlflow-server
+    ports:
+      - "5000:5000"
+    command: >
+      mlflow server
+      --backend-store-uri sqlite:///mlflow.db
+      --default-artifact-root ./mlartifacts
+      --host 0.0.0.0
+      --port 5000
+      --allowed-hosts "mlflow-server:5000,localhost:5000,127.0.0.1:5000,mlflow-server,localhost,127.0.0.1" 
+    volumes:
+      - ./mlruns:/telco-churn/mlruns
+      - ./mlartifacts:/telco-churn/mlartifacts
+      - ./mlflow.db:/telco-churn/mlflow.db
+
+  # ==========================================
+  # SERVICE 2: TRAINING SCRIPT (Run to Completion)
+  # ==========================================
+  model-training:
+    build: .
+    container_name: churn_training
+    depends_on:
+      - mlflow-server
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow-server:5000
+      - GIT_PYTHON_REFRESH=quiet  # FIX 2: Silence MLflow Git executable warnings inside container
+    command: python -m src.models.train
+    volumes:
+      - ./data:/telco-churn/data
+
+  # ==========================================
+  # SERVICE 3: FASTAPI INFERENCE (Starts ONLY after Training Done)
+  # ==========================================
+  fastapi-inference:
+    build: .
+    container_name: churn_fastapi
+    ports:
+      - "8000:8000"
+    depends_on:
+      mlflow-server:
+        condition: service_started
+      model-training:
+        # MAIN CONFIG: Ensure API starts only after successful model training completion
+        condition: service_completed_successfully 
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow-server:5000
+      - GIT_PYTHON_REFRESH=quiet  # FIX 2: Silence MLflow Git executable warnings inside container
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - ./logs:/telco-churn/logs
+
+  # ==========================================
+  # SERVICE 4: EVIDENTLY AI (Weekly / Manual Trigger)
+  # ==========================================
+  evidently-ai:
+    build: .
+    container_name: churn_evidently
+    # MAIN CONFIG: Prevent service from auto-starting during default "docker compose up"
+    profiles:
+      - weekly-cron
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow-server:5000
+      - GIT_PYTHON_REFRESH=quiet  # FIX 2: Silence MLflow Git executable warnings inside container
+    command: python -m src.evaluation.evidently_report 
+    volumes:
+      - ./logs:/telco-churn/logs
+      - ./reports:/telco-churn/reports

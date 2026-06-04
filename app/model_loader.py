@@ -4,7 +4,7 @@ import mlflow
 import os
 
 tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
-mlflow.set_tracking_uri("tracking_uri")
+mlflow.set_tracking_uri(tracking_uri)
 
 MODEL_URI = "models:/churn_model@champion"
 THRESHOLD_PATH = "models/threshold.pkl"
