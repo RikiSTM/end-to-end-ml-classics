@@ -2,6 +2,8 @@ import joblib, time
 from pathlib import Path
 import mlflow.pyfunc
 import numpy as np
+import os
+import mlflow
 
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.preprocessing import StandardScaler
@@ -22,7 +24,8 @@ from mlflow.models import infer_signature
 from mlflow.tracking import MlflowClient
 import mlflow.sklearn
 
-mlflow.set_tracking_uri("http://127.0.0.1:5000")
+TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
+mlflow.set_tracking_uri(TRACKING_URI)
 
 
 class SklearnProbaWrapper(mlflow.pyfunc.PythonModel):
