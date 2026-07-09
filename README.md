@@ -111,6 +111,7 @@ Future Improvements (WIP):
 - Code Refactoring: Refactor the Great Expectations (GX) scripts using proper design patterns to improve modularity and maintainability.
 - Fairness & Bias Mitigation: Incorporate Fairlearn to evaluate model fairness and mitigate potential biases in predictions.
 - Comprehensive Validation: Implement Deepchecks for robust model validation, data integrity checks, and performance evaluation.
+- Add data drift check automation : Implement automatic scheduler based hit from evidently AI to pipeline for automatic drift detection
 
 ## 9. Author
 Riki Sutiaman
