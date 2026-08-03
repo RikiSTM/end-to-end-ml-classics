@@ -56,11 +56,12 @@ This project follows a multi-model experimentation strategy tracked via **MLflow
 
 ## 5. MLOps & Architecture Design
 
-Unlike standard notebook-based projects, this repository emphasizes **production reliability**:
+Unlike standard notebook-based projects, this repository emphasizes **production reliability** and **clean code architecture** (SOLID principles):
 
 1.  **Experiment Tracking:** Integrated with `MLflow` to log parameters, metrics, and model artifacts seamlessly.
-2.  **Modular Pipeline:** In-memory, function-based data flow (Raw Data → Validation → Feature Engineering → Train/Test Split → Model Training → Evaluation) without relying on intermediate CSVs.
-3.  **Containerized Serving:** The best model is served via `FastAPI` and fully containerized using `Docker` and `docker-compose` for isolated, reproducible environments.
+2.  **Automated Explainable AI (XAI):** Utilizes `SHAP` for dynamic feature importance extraction (supporting both Linear and Tree explainers), intercepting preprocessed data to preserve original feature names and logging visual artifacts directly to the MLflow registry.
+3.  **Modular Pipeline:** In-memory, function-based data flow (Raw Data → Validation → Feature Engineering → Train/Test Split → Model Training → Evaluation) avoiding dependency on intermediate static files.
+4.  **Containerized Serving:** The champion model is served via `FastAPI` and fully containerized using `Docker` and `docker-compose` for isolated, reproducible environments.
 
 ---
 
@@ -81,6 +82,24 @@ docker-compose up --build -d
 - MLflow UI: http://localhost:5000
 ```
 
+### 6.1. Local Training Pipeline (Development & Tracking)
+To run the model training pipeline and generate MLflow experiments locally, use `poetry` for dependency management. You will need two terminal windows.
+
+**Terminal 1: Start the MLflow Tracking Server**
+```bash
+# Navigate to the project root
+cd telco-churn-mlops-pipeline
+
+# Start the MLflow server on localhost
+poetry run mlflow server --host 127.0.0.1 --port 5000
+
+# Navigate to the project root
+cd telco-churn-mlops-pipeline
+
+# Run the training script as a module to resolve internal imports
+poetry run python -m src.models.train
+```
+
 ---
 
 ## 7. Project Structure
@@ -91,12 +110,12 @@ docker-compose up --build -d
 │   ├── data/             # ingest.py, validation.py
 │   ├── features/         # build_features.py
 │   ├── models/           # train.py
-│   └── evaluation/       # evaluate.py
+│   └── evaluation/       # evaluate.py, xai.py (Automated SHAP logging)
 ├── data/                 # Raw and processed data storage
 ├── notebooks/            # EDA and initial experiments
 ├── docker-compose.yml    # Multi-container orchestration
 ├── Dockerfile            # Container configuration
-└── requirements.txt      # Python dependencies
+└── requirements.txt      # Python dependencies (or pyproject.toml for Poetry)
 ```
 
 ---
