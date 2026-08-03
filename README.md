@@ -107,7 +107,6 @@ Limitations:
 - DVC is not utilized as we are currently working with a single, static Kaggle dataset.
 
 Future Improvements (WIP): 
-- Explainable AI (XAI: Integrate tools like SHAP/LIME to debug model logic and provide interpretability for business stakeholders.
 - Code Refactoring: Refactor the Great Expectations (GX) scripts using proper design patterns to improve modularity and maintainability.
 - Fairness & Bias Mitigation: Incorporate Fairlearn to evaluate model fairness and mitigate potential biases in predictions.
 - Comprehensive Validation: Implement Deepchecks for robust model validation, data integrity checks, and performance evaluation.
