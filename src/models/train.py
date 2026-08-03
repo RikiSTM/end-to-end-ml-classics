@@ -18,6 +18,7 @@ from xgboost import XGBClassifier
 from src.evaluation.evaluate import evaluate, find_best_threshold_business
 from src.data.ingest import load_raw_data
 from src.features.build_features import FeatureBuilder
+from src.evaluation.xai import log_shap_to_mlflow
 
 import mlflow
 from mlflow.models import infer_signature
@@ -227,6 +228,8 @@ def main():
             },
             input_example=X_train.iloc[:5]
             )
+
+            log_shap_to_mlflow(pipeline=pipeline, X_train=X_train, run_name=name)
 
             run_ids[name] = mlflow.active_run().info.run_id
 
