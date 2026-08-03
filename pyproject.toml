@@ -20,6 +20,7 @@ uvicorn = "^0.44.0"
 evidently = "^0.7.21"
 great-expectations = "^1.17.2"
 shap = "^0.52.0"
+fairlearn = "^0.14.0"
 
 [build-system]
 requires = ["poetry-core"]

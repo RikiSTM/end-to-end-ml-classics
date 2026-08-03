@@ -1010,6 +1010,25 @@ files = [
 tests = ["asttokens (>=2.1.0)", "coverage", "coverage-enable-subprocess", "ipython", "littleutils", "pytest", "rich ; python_version >= \"3.11\""]
 
 [[package]]
+name = "fairlearn"
+version = "0.14.0"
+description = "A Python package to assess and improve fairness of machine learning models."
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "fairlearn-0.14.0-py3-none-any.whl", hash = "sha256:2ffe37b71f5b6a8e140b5db75a7990da64fd04b46e7acfc81654f92497ed2ece"},
+    {file = "fairlearn-0.14.0.tar.gz", hash = "sha256:dc9d12fc6d3f4c94f1bf32eb11032b73363c4a62c986485bcc87febe2e583ebd"},
+]
+
+[package.dependencies]
+narwhals = ">=1.14.0"
+numpy = ">=1.24.4"
+pandas = ">=2.0.3"
+scikit-learn = ">=1.5.0"
+scipy = ">=1.9.3"
+
+[[package]]
 name = "faker"
 version = "40.13.0"
 description = "Faker is a Python package that generates fake data for you."
@@ -6397,4 +6416,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.14"
-content-hash = "de939ca57cfc65c0e3530c110b61ce8ee9ef109ad270a64e6a64de12b6d24fc3"
+content-hash = "6db4593f6a5b57443d99ffb4fd13af27751af716e9828dca27b0ca528d9e4adf"
