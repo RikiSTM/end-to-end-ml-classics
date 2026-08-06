@@ -4,6 +4,8 @@ import numpy as np
 import mlflow
 from sklearn.metrics import f1_score, accuracy_score
 from fairlearn.metrics import MetricFrame, demographic_parity_difference, equalized_odds_difference
+from fairlearn.postprocessing import ThresholdOptimizer
+
 
 # Configure standard logger for production tracking
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -69,3 +71,24 @@ def evaluate_and_log_fairness(y_true: pd.Series, y_pred: np.ndarray, sensitive_f
     except Exception as e:
         logger.error(f"Fairness evaluation failed for {feature_name}: {str(e)}")
         raise
+    
+    
+
+def mitigate_bias(champion_model, X_train, y_train, sensitive_features):
+    """
+    Applies post-processing mitigation on the champion model 
+    to balance Equalized Odds across demographic groups.
+    """
+    
+    # Wrap the champion model with Fairlearn's ThresholdOptimizer
+    optimizer = ThresholdOptimizer(
+        estimator=champion_model,
+        constraints="equalized_odds",  # Target: equalize error rates across groups
+        prefit=True,                   # Inform optimizer the model is already trained
+        predict_method="predict_proba" # Retain the model's native probability scores
+    )
+    
+    # Train the optimizer to find group-specific thresholds
+    optimizer.fit(X_train, y_train, sensitive_features=sensitive_features)
+    
+    return optimizer

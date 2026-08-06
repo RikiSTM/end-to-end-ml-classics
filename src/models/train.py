@@ -19,7 +19,7 @@ from src.evaluation.evaluate import evaluate, find_best_threshold_business
 from src.data.ingest import load_raw_data
 from src.features.build_features import FeatureBuilder
 from src.evaluation.xai import log_shap_to_mlflow
-from src.evaluation.fairness import evaluate_and_log_fairness
+from src.evaluation.fairness import evaluate_and_log_fairness, mitigate_bias
 
 import mlflow
 from mlflow.models import infer_signature
@@ -197,6 +197,17 @@ def main():
     
     # Define sensitive feature name based on your raw dataset schema
     SENSITIVE_FEATURE_NAME = "SeniorCitizen"
+    
+    # --- NEW ADDITION: EXECUTE BIAS MITIGATION HERE ---
+    print(f"\n[INFO] Mitigating bias on Champion Model ({best_model_name})...")
+    
+    mitigated_model = mitigate_bias(
+        champion_model=best_model, 
+        X_train=X_train, 
+        y_train=y_train, 
+        sensitive_features=X_train[SENSITIVE_FEATURE_NAME]
+    )
+    # --------------------------------------------------
 
     for name, metrics in results.items():
 
@@ -246,10 +257,19 @@ def main():
                 # 1. Extract the sensitive column directly from holdout test data
                 sensitive_feature_test = X_test[SENSITIVE_FEATURE_NAME]
                 
-                # 2. Generate probabilities and strictly enforce the business threshold
-                y_proba = pipeline.predict_proba(X_test)[:, 1]
-                y_pred_binary = (y_proba >= model_threshold).astype(int)
-                
+                # 2. Generate predictions and enforce thresholds
+                if name == best_model_name:
+                    # CHAMPION: Use only champion tags model
+                    # (ThresholdOptimizer only output 0 or 1)
+                    y_pred_binary = mitigated_model.predict(
+                        X_test, 
+                        sensitive_features=sensitive_feature_test
+                    )
+                else:
+                    # LOSERS: use old Treshold implementation)
+                    y_proba = pipeline.predict_proba(X_test)[:, 1]
+                    y_pred_binary = (y_proba >= model_threshold).astype(int)
+                    
                 # 3. Execute fairness evaluation and log synchronously to MLflow
                 evaluate_and_log_fairness(
                     y_true=y_test,
@@ -261,6 +281,8 @@ def main():
                 print(f"WARNING: Sensitive feature '{SENSITIVE_FEATURE_NAME}' not found in X_test. Skipping fairness audit.")
 
             run_ids[name] = mlflow.active_run().info.run_id
+            
+            
 
     # ===== registry =====
     client = MlflowClient()
@@ -287,7 +309,7 @@ def main():
     )
 
     # ===== save =====
-    save_best_artifacts(best_model, best_threshold)
+    save_best_artifacts(mitigated_model, best_threshold)
 
 if __name__ == "__main__":
     main()
