@@ -5,6 +5,7 @@
 ![MLflow](https://img.shields.io/badge/MLflow-0194E2?style=flat&logo=mlflow)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-%23F7931E.svg?style=flat&logo=scikit-learn&logoColor=white)
+![Fairlearn](https://img.shields.io/badge/Fairlearn-8A2BE2?style=flat)
 
 An end-to-end Machine Learning pipeline to predict customer churn, featuring automated data ingestion, model tracking, and a containerized API for real-time inference.
 
@@ -51,7 +52,7 @@ This project follows a multi-model experimentation strategy tracked via **MLflow
 *   **Models Evaluated:** Logistic Regression (Baseline), Random Forest, XGBoost.
 *   **Metrics Used:** ROC-AUC (ranking performance), Precision, Recall, F1 Score.
 *   **Threshold Tuning:** Instead of using a fixed default threshold (0.5), this pipeline dynamically evaluates multiple probability thresholds and selects the one that maximizes the **F1 Score** to ensure a better balance between False Positives and False Negatives.
-
+*   **Fairness & Bias Mitigation:** After finding the champion model, a post-processing mitigation is applied using `Fairlearn` to ensure demographic parity (Equalized Odds) without fundamentally altering the optimized base algorithm.
 ---
 
 ## 5. MLOps & Architecture Design
@@ -62,6 +63,7 @@ Unlike standard notebook-based projects, this repository emphasizes **production
 2.  **Automated Explainable AI (XAI):** Utilizes `SHAP` for dynamic feature importance extraction (supporting both Linear and Tree explainers), intercepting preprocessed data to preserve original feature names and logging visual artifacts directly to the MLflow registry.
 3.  **Modular Pipeline:** In-memory, function-based data flow (Raw Data → Validation → Feature Engineering → Train/Test Split → Model Training → Evaluation) avoiding dependency on intermediate static files.
 4.  **Containerized Serving:** The champion model is served via `FastAPI` and fully containerized using `Docker` and `docker-compose` for isolated, reproducible environments.
+5.  **Responsible AI (Bias Mitigation):** Automatically audits the champion model for demographic bias against sensitive features (e.g., `SeniorCitizen`) and applies `ThresholdOptimizer` to correct unequal error rates before saving the artifact.
 
 ---
 
@@ -110,7 +112,7 @@ poetry run python -m src.models.train
 │   ├── data/             # ingest.py, validation.py
 │   ├── features/         # build_features.py
 │   ├── models/           # train.py
-│   └── evaluation/       # evaluate.py, xai.py (Automated SHAP logging)
+│   └── evaluation/       # evaluate.py, xai.py, fairness.py (Bias Audit & Mitigation)
 ├── data/                 # Raw and processed data storage
 ├── notebooks/            # EDA and initial experiments
 ├── docker-compose.yml    # Multi-container orchestration
@@ -127,7 +129,6 @@ Limitations:
 
 Future Improvements (WIP): 
 - Code Refactoring: Refactor the Great Expectations (GX) scripts using proper design patterns to improve modularity and maintainability.
-- Fairness & Bias Mitigation: Incorporate Fairlearn to evaluate model fairness and mitigate potential biases in predictions.
 - Comprehensive Validation: Implement Deepchecks for robust model validation, data integrity checks, and performance evaluation.
 - Add data drift check automation : Implement automatic scheduler based hit from evidently AI to pipeline for automatic drift detection
 
