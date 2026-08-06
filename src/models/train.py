@@ -19,6 +19,7 @@ from src.evaluation.evaluate import evaluate, find_best_threshold_business
 from src.data.ingest import load_raw_data
 from src.features.build_features import FeatureBuilder
 from src.evaluation.xai import log_shap_to_mlflow
+from src.evaluation.fairness import evaluate_and_log_fairness
 
 import mlflow
 from mlflow.models import infer_signature
@@ -193,11 +194,17 @@ def main():
 
     # ===== MLflow =====
     run_ids = {}
+    
+    # Define sensitive feature name based on your raw dataset schema
+    SENSITIVE_FEATURE_NAME = "SeniorCitizen"
 
     for name, metrics in results.items():
 
         pipeline = trained_models[name]
         cv_metrics = cv_results[name]
+        
+        # Isolate the exact optimized threshold from the evaluation results
+        model_threshold = metrics.get("threshold", 0.5)
 
         signature = infer_signature(
             X_train,
@@ -230,6 +237,28 @@ def main():
             )
 
             log_shap_to_mlflow(pipeline=pipeline, X_train=X_train, run_name=name)
+            
+            # ==========================================
+            # FAIRNESS EVALUATION INTEGRATION
+            # ==========================================
+            if SENSITIVE_FEATURE_NAME in X_test.columns:
+                
+                # 1. Extract the sensitive column directly from holdout test data
+                sensitive_feature_test = X_test[SENSITIVE_FEATURE_NAME]
+                
+                # 2. Generate probabilities and strictly enforce the business threshold
+                y_proba = pipeline.predict_proba(X_test)[:, 1]
+                y_pred_binary = (y_proba >= model_threshold).astype(int)
+                
+                # 3. Execute fairness evaluation and log synchronously to MLflow
+                evaluate_and_log_fairness(
+                    y_true=y_test,
+                    y_pred=y_pred_binary,
+                    sensitive_feature=sensitive_feature_test,
+                    feature_name=SENSITIVE_FEATURE_NAME
+                )
+            else:
+                print(f"WARNING: Sensitive feature '{SENSITIVE_FEATURE_NAME}' not found in X_test. Skipping fairness audit.")
 
             run_ids[name] = mlflow.active_run().info.run_id
 
