@@ -4,7 +4,7 @@ from app.model_loader import load_artifacts
 from app.schema import ChurnRequest, ChurnResponse
 import pandas as pd
 from datetime import datetime, timezone
-from app.logging import setup_logger
+from app.logger import setup_logger
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from app.adapter import build_full_input
