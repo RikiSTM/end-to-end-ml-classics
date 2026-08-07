@@ -2,7 +2,6 @@ def build_full_input(data: dict) -> dict:
     full = {
         "customerID": "dummy",
         "gender": "Male",
-        "SeniorCitizen": 0,
         "Partner": "No",
         "Dependents": "No",
         "PhoneService": "Yes",
@@ -16,5 +15,5 @@ def build_full_input(data: dict) -> dict:
     full["TotalCharges"] = float(full["TotalCharges"])
     full["MonthlyCharges"] = float(full["MonthlyCharges"])
     full["tenure"] = int(full["tenure"])
-
+    full["SeniorCitizen"] = int(full["SeniorCitizen"])
     return full

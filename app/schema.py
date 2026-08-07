@@ -11,9 +11,9 @@ class ChurnRequest(BaseModel):
     OnlineBackup: str
     DeviceProtection: str
     TechSupport: str
+    SeniorCitizen: int
 
 
 class ChurnResponse(BaseModel):
     churn_probability: float
-    threshold: float
     churn_prediction: int
