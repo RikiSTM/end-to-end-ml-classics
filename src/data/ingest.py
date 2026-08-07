@@ -1,6 +1,8 @@
-import pandas as pd
-from pathlib import Path
 import sqlite3
+from pathlib import Path
+
+import pandas as pd
+
 from src.data.validation import validate_raw, validate_sql_layer
 
 # Config

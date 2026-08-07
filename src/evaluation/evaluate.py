@@ -1,10 +1,5 @@
-from sklearn.metrics import (
-    roc_auc_score,
-    precision_score,
-    recall_score,
-    f1_score
-)
 import numpy as np
+from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
 
 
 def evaluate(models, X_test, y_test):

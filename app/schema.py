@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class ChurnRequest(BaseModel):
     tenure: int
     MonthlyCharges: float

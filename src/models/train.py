@@ -1,30 +1,28 @@
-import joblib, time
-from pathlib import Path
-import mlflow.pyfunc
-import numpy as np
 import os
+import time
+from pathlib import Path
+
+import joblib
 import mlflow
-
-from sklearn.model_selection import train_test_split, StratifiedKFold
-from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import roc_auc_score, f1_score
-from sklearn.base import clone
-from sklearn.pipeline import Pipeline
-
-from xgboost import XGBClassifier
-
-from src.evaluation.evaluate import evaluate, find_best_threshold_business
-from src.data.ingest import load_raw_data
-from src.features.build_features import FeatureBuilder
-from src.evaluation.xai import log_shap_to_mlflow
-from src.evaluation.fairness import evaluate_and_log_fairness, mitigate_bias
-
-import mlflow
+import mlflow.pyfunc
+import mlflow.sklearn
+import numpy as np
 from mlflow.models import infer_signature
 from mlflow.tracking import MlflowClient
-import mlflow.sklearn
+from sklearn.base import clone
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import f1_score, roc_auc_score
+from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from xgboost import XGBClassifier
+
+from src.data.ingest import load_raw_data
+from src.evaluation.evaluate import evaluate, find_best_threshold_business
+from src.evaluation.fairness import evaluate_and_log_fairness, mitigate_bias
+from src.evaluation.xai import log_shap_to_mlflow
+from src.features.build_features import FeatureBuilder
 
 TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
 mlflow.set_tracking_uri(TRACKING_URI)
@@ -71,7 +69,7 @@ def build_models():
 def cross_validate_models(models, X, y, n_splits=5):
 
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
-    cv_results = {name: [] for name in models.keys()}
+    cv_results = {name: [] for name in models}
 
     for train_idx, val_idx in skf.split(X, y):
 
@@ -216,7 +214,6 @@ def main():
         
         # Isolate the exact optimized threshold from the evaluation results
         model_threshold = metrics.get("threshold", 0.5)
-
         signature = infer_signature(
             X_train,
             pipeline.predict(X_train)
@@ -244,8 +241,9 @@ def main():
             artifacts={
                 "model": "models/temp_pipeline.pkl"
             },
-            input_example=X_train.iloc[:5]
-            )
+            input_example=X_train.iloc[:5],
+                signature=signature
+                )
 
             log_shap_to_mlflow(pipeline=pipeline, X_train=X_train, run_name=name)
             

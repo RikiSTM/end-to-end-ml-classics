@@ -1,6 +1,7 @@
 import sqlite3
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 
 DATA_DIR = Path("data")

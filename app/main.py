@@ -1,14 +1,14 @@
 # app/main.py
+from datetime import datetime, timezone
+from pathlib import Path
+
+import pandas as pd
 from fastapi import FastAPI
+
+from app.adapter import build_full_input
+from app.logger import setup_logger
 from app.model_loader import load_artifacts
 from app.schema import ChurnRequest, ChurnResponse
-import pandas as pd
-from datetime import datetime, timezone
-from app.logger import setup_logger
-from fastapi import Request
-from fastapi.responses import JSONResponse
-from app.adapter import build_full_input
-from pathlib import Path
 
 logger = setup_logger()
 app = FastAPI()
@@ -48,5 +48,5 @@ def predict(data: ChurnRequest):
             "churn_prediction": pred
         }
     except Exception as e:
-        logger.error(f"internal_error | {str(e)}")
-        raise e
+        logger.error(f"internal_error | {e!s}")
+        raise 

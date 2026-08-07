@@ -1,10 +1,11 @@
-import os
 import logging
-import shap
+import os
+
+import matplotlib.pyplot as plt
 import mlflow
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+import shap
 from sklearn.pipeline import Pipeline
 
 # Configure standard logger for production tracking
@@ -44,7 +45,7 @@ def log_shap_to_mlflow(pipeline: Pipeline, X_train: pd.DataFrame, run_name: str)
         # Extract the original column names directly from the resulting Pandas DataFrame
         feature_names = X_features_only.columns.tolist()
         
-    except Exception as e:
+    except Exception as e: # noqa: BLE001
         # Fallback mechanism if the preprocessor fails to return a DataFrame
         logger.warning(f"Failed to automatically extract feature names ({e}). Using generic array indices.")
         feature_names = [f"feature_{i}" for i in range(X_train_transformed.shape[1])]

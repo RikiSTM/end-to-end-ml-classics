@@ -1,5 +1,6 @@
 import great_expectations as gx
 
+
 def validate_raw(df):
     
     # 1. Initialize Context

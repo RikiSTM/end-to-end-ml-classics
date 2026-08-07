@@ -1,11 +1,15 @@
 import logging
-import pandas as pd
-import numpy as np
-import mlflow
-from sklearn.metrics import f1_score, accuracy_score
-from fairlearn.metrics import MetricFrame, demographic_parity_difference, equalized_odds_difference
-from fairlearn.postprocessing import ThresholdOptimizer
 
+import mlflow
+import numpy as np
+import pandas as pd
+from fairlearn.metrics import (
+    MetricFrame,
+    demographic_parity_difference,
+    equalized_odds_difference,
+)
+from fairlearn.postprocessing import ThresholdOptimizer
+from sklearn.metrics import accuracy_score, f1_score
 
 # Configure standard logger for production tracking
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -69,7 +73,7 @@ def evaluate_and_log_fairness(y_true: pd.Series, y_pred: np.ndarray, sensitive_f
         logger.info(f"Successfully logged fairness metrics for {feature_name} to MLflow.")
 
     except Exception as e:
-        logger.error(f"Fairness evaluation failed for {feature_name}: {str(e)}")
+        logger.error(f"Fairness evaluation failed for {feature_name}: {e!s}")
         raise
     
     
