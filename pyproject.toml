@@ -32,3 +32,6 @@ dev = [
     "pytest-cov (>=7.1.0,<8.0.0)",
     "ruff (>=0.16.1,<0.17.0)"
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
