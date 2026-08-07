@@ -57,6 +57,7 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     volumes:
       - ./logs:/telco-churn/logs
+      - ./models:/telco-churn/models 
 
   # ==========================================
   # SERVICE 4: EVIDENTLY AI (Weekly / Manual Trigger)
