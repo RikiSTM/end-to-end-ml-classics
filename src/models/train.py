@@ -186,7 +186,7 @@ def main():
     results = evaluate(trained_models, X_test, y_test)
 
     best_model = results[best_model_name]["model"]
-    best_threshold = results[best_model_name]["threshold"]
+    best_threshold = cv_results[best_model_name]["threshold"]
 
     # ===== sanity check =====
     preds = best_model.predict(X_test)
