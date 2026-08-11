@@ -138,6 +138,5 @@ Let's connect and discuss more about ML Engineering, MLOps, and Reliable Automat
 🔗 https://www.linkedin.com/in/riki-sutiaman-ai-engineer/
 
 <blockquote>
-  <p>🌐 <a href="https://rikistm.github.io/telco-churn-mlops/">Live Project Page & Documentation</a><br>
   🧑‍💻 <a href="https://rikistm.github.io/">Visit my Main Portfolio</a> — RikiSTM (AI/ML Engineer | 10 Years QA Experience)</p>
 </blockquote>
